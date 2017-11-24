@@ -1,0 +1,51 @@
+LDAP_Injection(LDAP注入) 
+
+风险
+可能发生的情况
+    攻击者能够任意策划这个应用程序的LDAP查询语句。基于这个应用程序如何使用LDAP，攻击者能够潜在做如下任何事情：
+        * 作为另外一个用户登陆；
+        * 提升特权；
+        * 窃取信息。
+
+
+起因
+这样的情况是如何发生的
+    这个应用程序与一个LDAP服务器通信，例如Active Directory，通过发送文本LDAP查询语句或者命令。这个应用程序通过简单拼接的包含有用户输入的字符串来创建查询语句。由于这个用户输入既没有针对数据类型做校验，后续也没有被清洗，这个输入可能包含一些LDAP命令，这些命令将会被LDAP服务器解释执行。
+
+
+常规建议
+如何避免这样的情况
+    校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定格式的数据，而不是拒绝不合格的模式。检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+    2. 理想情况下，避免动态构建连接字符串。如果需要动态构建一个连接字符串，尝试不要包含用户输入。在任何情况下，使用平台提供的工具，例如.NET的SqlConnectionStringBuilder，或者至少酌情为您的平台编码这个经过校验的输入。
+
+源代码示例
+
+CSharp
+这个应用程序使用一个来自HttpRequest的“user”字段字符串来与LDAP服务器通信
+public class LDAPInjection
+{
+    public void foo(HttpRequest Request, DirectorySearcher searcher)
+    {
+        string userName = Request.QueryString["user"];
+        searcher.Filter = "(&(samAccountName=" + userName + "))";
+    }
+}
+
+
+在"user"字符串中的潜在的有危害的字符被移除
+public class LDAPInjectionFixed
+{
+    public void foo(HttpRequest Request, DirectorySearcher searcher)
+    {
+        string userName = Request.QueryString["user"];
+        userName = Regex.Replace(userName, "^\\d{3}-\\d{3}-\\d{4}$", "");
+        searcher.Filter = "(&(samAccountName=" + userName + "))";
+    }
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/90.html
