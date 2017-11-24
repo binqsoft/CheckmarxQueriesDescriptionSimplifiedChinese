@@ -1,0 +1,90 @@
+Connection_String_Injection(连接字符串注入) 
+
+风险
+可能发生的情况
+    攻击者能够篡改连接这个应用程序的数据库或者连接其它服务器的连接字符串。使用一些简单工具和文本编辑，攻击者将可能能够做如下任何事情：
+        * 损害应用程序性能（通过增加MIN POOL SIZE）；
+        * 篡改网络连接（例如，通过TRUSTED CONNECTION）；
+        * 引导应用程序到攻击者的伪造的数据库；
+        * 发掘数据库里系统账户的密码（通过暴力攻击）。
+
+
+起因
+这样的情况是如何发生的
+    为了与它的数据库或者其它服务器（例如，Active Directory）通信，应用程序动态地构建一个连接字符串。这个连接字符串包含有拼接到的用户输入。由于用户输入既没有被校验数据类型，后续也没有被清洗，这个输入能够被用来恶意地篡改这个连接字符串。
+
+常规建议
+如何避免这样的情况
+    1. 校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定格式的数据，而不是拒绝不合格的模式。检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+    2. 理想情况下，避免动态构建连接字符串。如果需要动态构建一个连接字符串，尝试不要包含用户输入。在任何情况下，使用平台提供的工具，例如.NET的SqlConnectionStringBuilder，或者至少酌情为您的平台编码这个经过校验的输入。
+
+源代码示例
+
+CSharp
+这个应用程序使用来自用户输入构建一个连接字符串
+class ConnectionStringInjection
+{
+    static void foo(Textbox textbox1, SqlConnectionStringBuilder bldr)
+    {
+        bldr.UserID = textbox1.Text;
+        myConnection = new SqlConnection(bldr.ToString());
+    }
+}
+
+在添加到连接字符串之前，首先针对恶意字符对用户输入进行检查
+class ConnectionStringInjectionFixed
+{
+    static void foo(Textbox textbox, SqlConnectionStringBuilder bldr)
+    {
+        bldr.UserID = textbox.Text.Replace("'", "");
+        myConnection = new SqlConnection(bldr.ToString());
+    }
+}
+
+Java
+这个应用程序使用来自用户输入构建一个连接字符串
+public class ConnectionStringInjection {
+    public static void main(String[] args) throws SQLException {
+        Scanner userInputScanner = new Scanner(System.in);
+        System.out.print("\nEnter url name: ");
+        String connURL = userInputScanner.nextLine();
+        Connection con = DriverManager.getConnection(connURL, "username", "password");
+    }
+}
+
+用户输入被翻译成预定义的连接字符串
+public class ConnectionStringInjectionFixed {
+    public static void main(String[] args) throws SQLException {
+        HashMap<String, String> sanitize = new HashMap<String, String>();
+        sanitize.put("DB_url_1", "DB_url_1");
+        sanitize.put("DB_url_2", "DB_url_2");
+        sanitize.put("DB_url_3", "DB_url_3");
+        Scanner userInputScanner = new Scanner(System.in);
+        System.out.print("\nEnter url name: ");
+        String connURL = userInputScanner.nextLine();
+        Connection con = DriverManager.getConnection(sanitize.get(connURL), "username", "password");
+    }
+}
+
+Python
+这个应用程序使用来自用户输入构建一个连接字符串
+from sys import stdin
+import cx_Oracle
+print 'Insert your ID: '
+userInput = stdin.readline()
+connection = cx_Oracle.connect(userInput + '/password@99.999.9.99:PORT/SID')
+
+用户输入的文件数字在使用前被转换为那个数字的字符串
+from sys import stdin
+import cx_Oracle
+print 'Insert your ID: '
+userInput = stdin.readline()
+connection = cx_Oracle.connect(str(int(userInput)) + '/password@99.999.9.99:PORT/SID')
+
+
+更多信息：http://cwe.mitre.org/data/definitions/99.html
