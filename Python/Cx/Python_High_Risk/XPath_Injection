@@ -1,0 +1,106 @@
+XPath_Injection(XPath注入) 
+
+风险
+可能发生的情况
+    基于包含在被查询的XML文档里的信息类型，攻击者能够引发从这个XML文档里选择错误信息的任何结果，例如窃取未授权的数据或者假冒另外一个用户。
+
+起因
+这样的情况是如何发生的
+    这个应用程序通过使用文本XPath查询语句查询一个XML文档。这个应用程序通过简单地拼接包含有用户输入的字符串来创建查询语句。因为用户输入既没有针对数据类型校验来进行检查，后续也没有被清洗，这个输入能够被恶意地制作以造成这个应用程序从这个XML文档里选择错误的信息。
+
+常规建议
+如何避免这样的情况
+    1. 校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定结构的数据，而不是拒绝不合格的模式。检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+    2. 理想情况下，避免基于用户输入制作xpath查询语句。如果需要依据用户输入制作查询语句，最好将XPath查询语句映射到用户参数，保持数据和代码之间的隔离。如果需要在查询语句里包含用户输入，如上面讲的，输入应该首先被正确地校验。
+
+
+源代码示例
+CSharp
+有害的 － 这个应用程序使用用户输入的字符串来构建一个XPath查询语句
+class XPathInjection
+{
+    static void foo(XPathDocument document)
+    {
+        XPathNavigator navigator = document.CreateNavigator();
+        string input = Console.ReadLine();
+        XPathNodeIterator nodes = navigator.Select(input);
+    }
+}
+
+有益的 － 在用户输入的字符串被使用到XPath查询语句里以前对它进行编码
+class XPathInjectionFixed
+{
+    static void foo(XPathDocument document)
+    {
+        XPathNavigator navigator = document.CreateNavigator();
+        string input = Console.ReadLine();
+        byte[] fileName = md5.ComputeHash(System.Text.Encoding.ASCII.GetBytes(input));
+        input = System.Text.Encoding.Default.GetString(fileName);
+        XPathNodeIterator nodes = navigator.Select(input);
+    }
+}
+
+
+Java
+有害的 － 这个应用程序使用用户输入的字符串来构建一个XPath查询语句
+public class XPath_Injection {
+	public static void main(String[] args) {
+		Scanner userInputScanner = new Scanner(System.in);
+		System.out.print("\nEnter xpath expression: ");
+		String expression = userInputScanner.nextLine();
+
+		// read a string value
+		XPath xPath = XPathFactory.newInstance().newXPath();
+		try {
+			XPathExpression email = xPath.compile(expression);
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+有益的 － 在用户输入的字符串被使用到XPath查询语句里以前对它进行编码
+public class XPath_Injection_Fixed {
+	public static void main(String[] args) {
+		HashMap<String, String> sanitize = new HashMap<String, String>();
+		sanitize.put("student", "/class/student");
+		sanitize.put("graduate", "/class/graduate");
+		sanitize.put("professor", "/class/professor");
+		Scanner userInputScanner = new Scanner(System.in);
+		System.out.print("\nEnter xpath expression: ");
+		String expression = userInputScanner.nextLine();
+
+		// read a string value
+		XPath xPath = XPathFactory.newInstance().newXPath();
+		try {
+			XPathExpression email = xPath.compile(sanitize.get(expression));
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+
+Python
+有害的 － 这个应用程序使用用户输入的字符串来构建一个XPath查询语句
+from sys import stdin
+import xpath
+print 'Insert item number: '
+userInput = stdin.readline()	
+xpath.find('//item' + userInput, doc)
+
+有益的 － 在用户输入的字符串被使用到XPath查询语句里以前将它转换为整数
+from sys import stdin
+import xpath
+print 'Insert item number: '
+userInput = stdin.readline()	
+xpath.find('//item' + str(int(userInput)), doc)
+
+
+
+更多信息：http://cwe.mitre.org/data/definitions/643.html
