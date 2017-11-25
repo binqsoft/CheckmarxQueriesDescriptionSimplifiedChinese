@@ -1,2 +1,2 @@
 # CheckmarxQueriesDescriptionSimplifiedChinese
-Translate Checkmarx queries description to simplified Chinese.
+Translate Checkmarx queries description into simplified Chinese.
