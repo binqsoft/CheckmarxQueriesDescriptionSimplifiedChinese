@@ -1,0 +1,83 @@
+Second_Order_SQL_Injection(二阶SQL注入) 
+
+风险
+可能发生的情况
+    攻击者能够直接访问所有的系统数据。攻击者将能够窃取任何由系统存储的敏感信息（例如个人用户详情或者信用卡），并且可能修改或者删除现存数据。
+
+起因
+这样的情况是如何发生的
+    这个应用程序通过发送文本SQL查询语句来与它的数据库通信。这个应用程序仅通过简单地拼接包含有从数据库获得的数据的字符串来创建查询语句。由于那个数据可能是之前从用户输入获得的，并没有被检查数据类型，后续也没有被清洗，这个数据能够包含被数据库解释执行的SQL命令。
+
+常规建议
+如何避免这样的情况
+    1. 校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定结构的数据，而不是拒绝不合格的模式。参数应该被限制到一个被允许的字符集里，并且没有被校验的输入应该被丢弃。除了字符之外，检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+    2. 用以下方式而不用拼接字符串：
+        a. 使用安全的数据库组件，例如存储的程序、参数化的查询语句和对象绑定（对命令和参数）。
+        b. 一个更好的解决方案是使用一个ORM库，例如EntityFramework，Hibernate，或者iBatis。
+    3. 依照最小特权原则，限制对数据库对象和功能的访问。
+
+
+源代码示例
+CSharp
+有害的 － 这个应用程序使用获得到的来自数据库的数据创建一个SQL查询语句
+public class SecondOrderSQLInjection
+{
+        public void foo(SqlConnection connection, SqlDataAdapter DA)
+        {
+                DataSet DS = new DataSet();
+                DA.Fill(ref DS, "UserName"); 
+                SqlCommand command = new SqlCommand("SELECT * FROM Customers " + "WHERE UserName = " + DS[0]["UserName"].ToString(), connection);
+                command.ExecuteNonQuery();
+        }
+}
+
+有益的 － 这个获得到的来自数据库的数据被检查潜在的恶意字符
+class SecondOrderSQLInjectionFixed
+{
+        public void foo(SqlConnection connection, SqlDataAdapter DA)
+        {
+                DataSet DS = new DataSet();
+                DA.Fill(ref DS, "UserName");
+                string userName = DS[0]["UserName"].ToString().Replace("'", "");
+                SqlCommand command = new SqlCommand("SELECT * FROM Customers " + "WHERE UserName = " + userName, connection);
+                command.ExecuteNonQuery();
+        }
+}
+
+Java
+有害的 － 这个应用程序使用获得到的来自数据库的数据创建一个SQL查询语句
+public class Second_Order_SQL_Injection {
+	public static void sql(Connection con, String sqlStm) {
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(sqlStm);
+			String userName = rs.getString("USER_NAME");
+			String newSqlStm = "Update USER set PASSWORD = '1234' where userName like " + userName;
+			stmt.executeUpdate(newSqlStm);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+有益的 － 这个获得到的来自数据库的数据被检查潜在的恶意字符
+public class Second_Order_SQL_Injection_Fixed {
+	public static void sql(Connection con, String sqlStm) {
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(sqlStm);
+			String userName = rs.getString("USER_NAME");
+			userName = userName.replaceAll("'", "");
+			String newSqlStm = "Update USER set PASSWORD = '1234' where userName like " + userName;
+			stmt.executeUpdate(newSqlStm);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}
+更多信息：http://cwe.mitre.org/data/definitions/89.html
