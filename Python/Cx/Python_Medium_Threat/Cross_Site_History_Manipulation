@@ -1,0 +1,32 @@
+Cross_Site_History_Manipulation(跨站历史篡改) 
+
+风险
+可能发生的情况
+    攻击者通过在JavaScript里篡改浏览器的History对象，能够违背浏览器的同源策略并侵犯一个用户的隐私。这能允许攻击者在某些情况下探测出这个用户是否登陆了，追踪这个用户的行为，或者推断其它条件值的状态。这也可能通过泄漏初始攻击的结果，加剧跨站请求伪造XSRF攻击。
+
+起因
+这样的情况是如何发生的
+    现代浏览器将用户的浏览历史暴漏给本地JavaScript作为之前访问过的一些URL的一个栈。然而这些浏览器强制执行了一个严格的同源策略(SOP)以防止来自一个网站的页面读取在其它站点上访问过的一些URL，这个History对象确实泄漏了历史栈的大小。使用这个信息，在一些情况下攻击者能够探索出这个应用程序在服务端执行的某些检验的结果。例如，如果这个应用程序重定向一个未授权的用户到登陆页面，位于另外一个网站上的一个脚本能够通过检查这个History对象的长度，探测到这个用户是否登陆了。
+    当这个应用程序基于一些条件的值、这个用户的服务端的session的状态来重定向这个用户的浏览器时，这种信息泄漏就成为可能。例如，这个用户是否被这个应用程序授权，这个用户是否已经访问了某一个带有一些特殊参数的某网页，或者一些应用程序数据的值。更多信息，请查看：https://www.checkmarx.com/wp-content/uploads/2012/07/XSHM-Cross-site-history-manipulation.pdf。
+
+常规建议
+如何避免这样的情况
+    常规指导：
+        为这个应用程序里的所有敏感页面添加响应头"X-Frame-Options: DENY"，以实现在现代浏览器版本里保护不受IFrame版本的XSHM跨站历史篡改攻击。
+    特殊建议：
+        为所有的目标URL添加一个随机值作为一个参数。
+
+源代码示例
+Java
+有害的 － 通过浏览历史泄漏变量状态的示例代码
+If (!isAuthenticated)
+    response.sendRedirect("Login.jsp"); 
+
+有益的 － 通过随机token防止历史泄漏的示例代码
+if (request.getParameter("r") == null)
+    response.sendRedirect("Login.jsp?r=" + (new Random()).nextInt());
+
+If (!isAuthenticated)
+    response.sendRedirect("Login.jsp?r=" + (new Random()).nextInt());
+
+更多信息：http://cwe.mitre.org/data/definitions/203.html
