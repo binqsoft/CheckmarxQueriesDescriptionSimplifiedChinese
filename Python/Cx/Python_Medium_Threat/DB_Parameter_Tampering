@@ -1,0 +1,48 @@
+DB_Parameter_Tampering(数据库参数篡改) 
+
+风险
+可能发生的情况
+    一个恶意用户通过简单地修改发送给服务器的引用参数，就能够访问其它用户的个人信息。因此，一个恶意用户能够绕过访问控制，并访问未授权的记录，例如其它用户的账户，窃取机密或者受限信息。
+
+起因
+这样的情况是如何发生的
+    这个应用程序访问用户信息而不过滤用户ID。例如，它可能只通过一个提交的账户ID提供信息。应用程序使用这个用户的输入从数据库表里过滤特定的记录。数据库表里含有敏感的个人信息（例如，用户账户或者支付详情）。因为应用程序不依照任何用户身份过滤记录，也不限制它到一个预先计算的可接受值的列表，一个恶意用户能轻松地修改提交的引用标志，然后访问未授权的记录。
+
+常规建议
+如何避免这样的情况
+    常规指导：
+        * 在提供任何对敏感数据（包括特殊对象引用）的访问之前，强制执行授权检查
+        * 明确地屏蔽对任何未授权数据（尤其是其它用户的数据）的访问
+        * 如果可能的话，避免允许用户通过简单地发送一个记录ID来请求任意数据。例如，与使一个用户发送一个账户ID相反的是，这个应用程序应该为当前授权的用户session会话查找这个账户ID。
+    特殊风险缓解：
+        * 依照一个用户特定的标志符过滤数据库查询语句，例如客户编号
+        * 将用户输入映射到一个间接引用，例如，通过一个事先准备好的允许值列表。
+
+源代码示例
+Java
+未过滤的直接对象引用
+public ResultSet getAccountInfo(request req){
+    int accountId = Integer.parseInt(req.getParameter("accountId"));    
+    PreparedStatement stmt = connection.PreparedStatement("SELECT * from Accounts where AccountId = ?");
+    
+    stmt.setInt(1, accountId);   
+    ResultSet accountRS = stmt.executeQuery();                 
+    
+    return accountRS;
+}
+
+记录引用现在是经过过滤的和间接的
+public ResultSet getAccountInfo(request req){
+    int accountIndex = Integer.parseInt(req.getParameter("accountId"));
+    int realAccountId = userAccountList.get(accountIndex);
+    int userId = req.getSession().getAttribute("userId"); 
+    PreparedStatement stmt = connection.PreparedStatement("SELECT * from Accounts where AccountId = ? AND UserId = ?");
+    
+    stmt.setInt(1, realAccountId);   
+    stmt.setInt(2, userId);
+    ResultSet accountRS = stmt.executeQuery();                 
+    
+    return accountRS;
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/284.html
