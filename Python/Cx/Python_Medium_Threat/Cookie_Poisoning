@@ -1,0 +1,42 @@
+Cookie_Poisoning(Cookie篡改) 
+
+风险
+可能发生的情况
+    如果一个外部的，恶意的第三方能够控制另外一个用户的应用程序cookie，这将能被以多种形式滥用。这包括篡改应用程序数据，绕过访问控制检查，违反完整性约束，或者改变一个用户的偏好，例如购物车里的内容。
+    除此之外，这个缺陷甚至能导致附加的多种攻击，例如Session固定攻击和跨站脚本攻击（XSS）。
+
+起因
+这样的情况是如何发生的
+    这个应用程序不能防止恶意输入被插入进这个应用程序的cookie里。攻击者能够使用恶意URL参数影响受害人的浏览器，造成这个脚本将这些恶意的值加载到这个用户的cookie。这可能通过钓鱼、存储的链接、外部链接和其它更多方式达到目的。
+
+常规建议
+如何避免这样的情况
+    不要基于用户可以控制的输入设置cookie，例如URL。
+
+源代码示例
+JavaScript
+有害的 － 基于URL的cookie
+function setCookie()
+{
+    var value = window.location.hash;
+    document.cookie = "Action=" + value; 
+}
+
+有益的 － 白名单化的cookie值
+function setCookie()
+{
+    var value = window.location.hash;
+    
+    if (actionsArray[value] != undefined)
+    {
+        var date = new Date();
+        date.setTime(date.getTime() + 1000*60*20);
+
+        document.cookie = "ActionID=" + actionsArray[value] 
+                        + "; expires=" + date.toUTCString()
+                        + "; path=/myApp/" 
+                        + "; secure;"
+    }
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/472.html
