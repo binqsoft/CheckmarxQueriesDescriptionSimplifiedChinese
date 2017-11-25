@@ -1,0 +1,27 @@
+Filtering Sensitive Logs (过滤敏感日志)
+CWE ID   10602
+描述     您正在接收敏感用户数据？密码，信用卡号，等等。默认情况下，Rails将所有提交上来的参数以明文文本形式存储在日志里。这个敏感输入应该被过滤，它不能出现在日志文件里。
+
+演示示例 如果我们看到一个用户注册表，填写它，并注册，我们然后能够看看开发日志，我们能够看到所有我们在表单里提交的参数被以明文文本形式存储：
+Processing UsersController#create (for 127.0.0.1 at 2009-01-02 10:13:13) [POST]
+Parameters: {"user"=>{"name"=>"eifion", "password_confirmation"=>"secret", "password"=>"secret"},
+  "commit"=>"Register", "authenticity_token"=> "9efc03bcc37191d8a6dc3676e2e7890ecdfda0b5"}
+User Create (0.5ms)   INSERT INTO "users" ("name", "updated_at", "password_confirmation",
+  "password","created_at") VALUES('eifion', '2009-01-02 10:13:13', 'secret', 'secret',
+  '2009-01-02 10:13:13')
+    我们填进表单的这些值在日志文件里是清楚可见的，并且这明显地引起安全问题。
+
+潜在的消除风险方法   Rails 1.2 引入了filter_parameter_logging这个命令。把这个命令放入ApplicationController允许我们基于它们的名称过滤参数。
+class ApplicationController < actioncontroller::base="" filter_parameter_logging="" "password"="" end="">
+
+后续版本的Rails默认在应用程序控制器里有这行，但是是被注释掉的，因此我们只需要取消注释以使用它。我们创建另外的新用户，并查看日志里是什么。
+Processing UsersController#create (for 127.0.0.1 at 2009-01-02 11:02:33) [POST]
+Parameters: {"user"=>{"name"=>"susan", "password_confirmation"=>"[FILTERED]", "password"=>
+  "[FILTERED]"}, "commit"=>"Register", "action"=>"create", "authenticity_token"=>
+  "9efc03bcc37191d8a6dc3676e2e7890ecdfda0b5", "controller"=>"users"}
+User Create (0.4ms)   INSERT INTO "users" ("name", "updated_at", "password_confirmation",
+  "password", "created_at") VALUES('susan', '2009-01-02 11:02:33', 'verysecret', 'verysecret',
+  '2009-01-02 11:02:33')
+我们现在看到我们的create动作有把[FILTERED]放入日志，而不是提供的密码。这个参数日志将过滤任何参数，这些参数的名字包含有传递给它的参数，因此在我们的示例里password_confirmation字段也被过滤掉。然而，我们仍然在日志的SQL语句里能看到密码。这将仅仅是在开发模式下的一个问题，默认在生产模式下这个数据不会被存进日志里。同样，如果我们在存储密码到数据库之前哈希了我们的密码，然后这些密码不会被以明文文本形式发送给数据库，并且也不会在日志里看到。
+ASCII Cast: 过滤敏感日志 － http://asciicasts.com/episodes/9-filtering-sensitive-logs
+Rails Cast: 过滤敏感日志 － http://railscasts.com/episodes/9-filtering-sensitive-logs
