@@ -1,0 +1,126 @@
+Resource_Injection(资源注入) 
+
+风险
+可能发生的情况
+    攻击者能够打开一个后门，使攻击者能够直接连接到应用程序的服务器，潜在地引发服务器接管或者其它直接攻击。
+
+起因
+这样的情况是如何发生的
+    这个应用程序打开一个网络socket，监听即将到来的网络连接。然而，这个应用程序使用用户输入来定义socket，这将使攻击者能够控制它。
+
+常规建议
+如何避免这样的情况
+    不要允许用户定义网络socket的参数。
+
+
+源代码示例
+CSharp
+有害的 － 这个应用程序使用用户输入的端口号打开一个网络socket
+class ResourceInjection
+{
+            public void foo(TextBox textBox1)
+        {
+                        long address = Convert.ToInt32(textBox1.Text);
+            IPEndPoint endpoint = new IPEndPoint(address, port);
+            Socket socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            socket.Connect(endpoint);
+        }
+}
+
+有益的 － 这个应用程序打开一个硬编码的端口号并确实从用户接收到它
+class ResourceInjection
+{
+            public void foo(TextBox textBox1, long address)
+        {
+            IPEndPoint endpoint = new IPEndPoint(address, 15551);
+            Socket socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            socket.Connect(endpoint);
+        }
+}
+
+Java
+有害的 － 这个应用程序使用用户输入的端口号打开一个网络socket
+public class ResourceInjection {
+	public static void main(String[] args) {
+		Scanner userInputScanner = new Scanner(System.in);
+		System.out.print("\nEnter port number: ");
+		int portNumber = Integer.parseInt(userInputScanner.nextLine());
+		try {
+			ServerSocket serverSocket = new ServerSocket(portNumber);
+		} catch (Exception e) {
+			System.err.println("Caught Exception: " + e.getMessage());
+		}
+
+	}
+}
+
+有益的 － 这个应用程序根据用户输入打开一个硬编码的端口号
+public class ResourceInjectionFixed {
+	public static void main(String[] args) {
+		Scanner userInputScanner = new Scanner(System.in);
+		System.out.print("\nEnter port name: ");
+		String portName = userInputScanner.nextLine();
+		int portNum;
+		switch (portName) {
+		case "ftps":
+			portNum = 989;
+			break;
+		case "ftp":
+			portNum = 20;
+			break;
+		case "smtp":
+			portNum = 25;
+			break;
+		default:
+			portNum = 80;
+		}
+		try {
+			ServerSocket serverSocket = new ServerSocket(portNum);
+		} catch (Exception e) {
+			System.err.println("Caught Exception: " + e.getMessage());
+		}
+	}
+}
+
+Python
+有害的 － 这个应用程序使用用户输入的主机名打开一个网络socket
+rom sys import stdin
+import socket
+import sys
+
+userInput = stdin.readline()
+
+HOST = userInput 
+PORT = 8888 # Arbitrary non-privileged port
+	 
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print 'Socket created'
+	 
+#Bind socket to local host and port
+try:
+    s.bind((HOST, PORT))
+except socket.error as msg:
+    print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+    sys.exit()
+print 'Socket bind complete'
+
+有益的 － 这个应用程序打开一个硬编码的主机名，并确实从用户接收到它
+import socket
+import sys
+
+HOST = ''   # Symbolic name, meaning all available interfaces
+PORT = 8888 # Arbitrary non-privileged port
+	 
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print 'Socket created'
+	 
+#Bind socket to local host and port
+try:
+    s.bind((HOST, PORT))
+except socket.error as msg:
+    print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+    sys.exit()
+print 'Socket bind complete'
+
+
+更多信息：http://cwe.mitre.org/data/definitions/99.html
