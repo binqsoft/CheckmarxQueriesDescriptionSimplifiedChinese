@@ -1,0 +1,123 @@
+Stored_XSS(存储型跨站脚本攻击) 
+
+风险
+可能发生的情况
+    攻击者能够使用对应用程序的合法访问来对应用程序的数据库提交经过策划的数据。当另一个用户后续访问这个数据时，网页可能被重写，恶意脚本可能被激活。
+
+起因
+这样的情况是如何发生的
+    这个应用程序创建了一些包含有来自应用程序数据库的数据的网页。这个数据是直接嵌入进这个页面的HTML，造成浏览器把它作为这个页面的一部分展示出来。这个数据可能源自另外一个用户的输入。如果数据包含HTML片段或者JavaScript，这些也被展示，并且用户不能辨别出这不是其所预期的网页。这个漏洞是嵌入任意数据库数据而没有首先对它以一种格式进行编码的结果。这种编码行为将阻止浏览器把用户输入视为HTML而不是纯文本这种情况发生。
+
+常规建议
+如何避免这样的情况
+
+    1. 校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定结构的数据，而不是拒绝不合格的模式。检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+    2. 校验不是对编码的替代。在将动态数据嵌入到输出之前，无论来源，对这些动态数据全部进行编码。编码应该是上下文相关的。例如：
+        * 对HTML内容进行HTML编码
+        * 对输出到属性值的数据进行HTML属性编码
+        * 对服务器生成的JavaScript进行JavaScript编码
+    4. 考虑使用ESAPI编码库，或者平台内置的函数。对早期版本的ASP.NET，考虑使用AntiXSS库。
+    5. 在Content-Type的HTTP响应头，明确地对整个页面定义字符编码（charset）。
+    6. 为session cookie设置httpOnly标志，以防止利用XSS窃取cookie。
+
+源代码示例
+
+CSharp
+有害的 － 从一个SQL命令的执行里获得的数据被输出到一个label
+public class StoredXss
+{
+        public string foo(Label lblOutput, SqlConnection connection, int id)
+        {
+                string sql = "select email from CustomerLogin where customerNumber = @id";
+                SqlCommand cmd = new SqlCommand(sql, connection);
+                cmd.Prepare();
+                cmd.Parameters.AddWithValue("@id", id);
+                string output = (string)cmd.ExecuteScalar();
+                lblOutput.Text = String.IsNullOrEmpty(output) ? "Customer Number does not exist" : output;
+        }
+}
+
+
+有益的 － 输出的字符串在被展示到label里前被HTML编码
+public class StoredXssFixed
+{
+        public string foo(Label lblOutput, SqlConnection connection, HttpServerUtility Server, int id)
+        {
+                string sql = "select email from CustomerLogin where customerNumber = @id";
+                SqlCommand cmd = new SqlCommand(sql, connection);
+                cmd.Prepare();
+                cmd.Parameters.AddWithValue("@id", id);
+                string output = (string)cmd.ExecuteScalar()
+                lblOutput.Text = String.IsNullOrEmpty(output) ? "Customer Number does not exist" : Server.HtmlEncode(output);                
+        }
+}
+
+
+Java
+
+有害的 － 从一个SQL命令的执行里获得的数据被输出到一个label
+public class Stored_XSS {
+	public static void XSSExample(Statement stmt) throws SQLException {
+		Label label = new Label();
+		ResultSet rs;
+		rs = stmt.executeQuery("SELECT * FROM Customers WHERE UserName = Mickey");
+		String lastNames = "";
+		while (rs.next()) {
+			lastNames += rs.getString("Lname") + ", ";
+		}
+		label.setText("Mickey last names are: " + lastNames + " ");
+	}
+}
+
+
+有益的 － 输出的字符串在被展示到label里前被HTML编码
+public class Stored_XSS_Fix {
+	public static void XSSExample(Statement stmt) throws SQLException {
+		Label label = new Label();
+		ResultSet rs;
+		HashMap<String, String> sanitize = new HashMap<String, String>();
+		sanitize.put("A", "Cohen");
+		sanitize.put("B", "Smith");
+		sanitize.put("C", "Bond");
+		rs = stmt.executeQuery("SELECT * FROM Customers WHERE UserName = Mickey");
+		String lastNames = "";
+		while (rs.next()) {
+			lastNames += sanitize.get(rs.getString("Lname")) + ", ";
+		}
+		label.setText("Mickey last names are: " + lastNames + " ");
+	}
+}
+
+JavaScript
+有害的 － 从一个SQL命令执行结果里获得的数据被渲染到一个网页模版里
+function renderUserProfileTable(res, connection, user_id) {
+	connection.query('SELECT id,name,description from user WHERE id= ?', [user_id],function(err, results) {
+		var table = "<table>"
+		table += "<table class='profile-html-table'>"
+		table += "<tr><td>" + results[0].name + "</td></tr>"
+		table += "<tr><td>" + results[0].description + "</td></tr>"
+		table += "</table>"
+		res.render("profile", table)
+	});
+}
+
+有益的 － 从一个SQL命令执行结果里获得的数据被编码，然后被渲染到一个网页模版里
+var htmlencoder = require('htmlencode');
+
+function renderUserProfileTable(res, connection, user_id) {
+	connection.query('SELECT id,name,description from user WHERE id= ?', [user_id],function(err, results) {
+		var table = "<table>"
+		table += "<table class='profile-html-table'>"
+		table += "<tr><td>" + htmlencoder.htmlEncode(results[0].name) + "</td></tr>"
+		table += "<tr><td>" + htmlencoder.htmlEncode(results[0].description) + "</td></tr>"
+		table += "</table>"
+		res.render("profile", table)
+	});
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/79.html
