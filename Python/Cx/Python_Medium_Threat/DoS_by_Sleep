@@ -1,0 +1,48 @@
+DoS_by_Sleep(通过睡眠引发DoS) 
+
+风险
+可能发生的情况
+    攻击者能够提供一个非常高的睡眠值，有效地引发一次长时间的拒绝服务。
+
+起因
+这样的情况是如何发生的
+    这个应用程序使用用户提供的值来设置它的睡眠周期，没有对这个值强制执行一个有限的范围。
+
+常规建议
+如何避免这样的情况
+    1. 理想情况下，睡眠命令的持续时间一点也不应该依照用户输入。它应该或者是硬编码的，定义在一个配置文件里，或者在运行时动态地被计算。
+    2. 如果需要允许用户定义睡眠持续时间，这个值必须被检查并给强制限制在一个预定义的有效值范围内。
+
+
+源代码示例
+CSharp
+有害的 － 应用程序从用户接收到一个timeout整数用作Sleep()函数的参数。这个整数可能是非常大的数值。
+public class DosbySleep
+{
+        public void foo()
+        {
+                int sleep = int.Parse(HttpContext.Request.QueryString["timeout"]);
+                Thread.Sleep(sleep);
+        }
+}
+
+有益的 － 这个接收到的整数值被证实在一个可接受的范围内
+public class DosbySleep
+{
+        public void foo()
+        {
+                int sleep = int.Parse(HttpContext.Request.QueryString["timeout"]);
+                if (sleep > 1000)
+		{
+			sleep = 1000;
+		}
+		else if (sleep <= 10)
+                {
+                        sleep = 10;
+                }
+                Thread.Sleep(sleep);
+        }
+}
+
+
+更多信息：http://cwe.mitre.org/data/definitions/730.html
