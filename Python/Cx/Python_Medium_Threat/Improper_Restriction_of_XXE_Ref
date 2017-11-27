@@ -1,0 +1,69 @@
+Improper_Restriction_of_XXE_Ref(不正确地XML外部实体引用限制) 
+
+风险
+可能发生的情况
+    一个将要进行解析并替代在一个由用户控制的XML文档里的DTD实体引用的应用程序，能够允许攻击者构造XML文档以读取任意服务器文件。这个XML文档能够包含一个XML实体引用，这个实体引用引用了一个嵌入的指向任何本地文件的DTD实体定义。这将使攻击者能够获取在服务器上的任意系统文件。
+
+起因
+这样的情况是如何发生的
+    攻击者能够上传包含一个DTD声明的XML文档，特别是一个引用位于服务器磁盘上的本地文件的一个实体定义，例如 <!ENTITY xxe SYSTEM "file:///c:/boot.ini">。攻击者然后包含一个反向引用回那个实体定义的XML实体应用，例如<div>&xxe;</div> 。如果这个被解析的XML文档之后被返回给这个用户，结果将包含敏感系统文件的内容。
+    这是由XML解析器造成的，解析器被配置成自动解析DTD声明，并分解实体应用，而不是同时禁用DTD和外部实体引用。
+
+常规建议
+如何避免这样的情况
+常规指导：
+    * 在任何可能的地方，避免直接处理用户输入。
+    * 如果需要从用户获得XML，确保XML解析器被限制和制约。
+    * 特别是，禁用DTD解析和实体分解。在服务器上应用严格的XML schema，并相应地校验输入的XML。
+特殊建议：
+    * 使用安全的XML解析器，并禁用DTD解析和实体分解。
+    * 不要使能DTD解析或者实体分解。
+
+
+源代码示例
+Java
+有害的 － 脆弱的带XMLStreamReader的XML解析
+String parseXML(InputStream input) {
+    StringBuilder content = new StringBuilder();
+    
+    XMLInputFactory factory = XMLInputFactory.newFactory(); 
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, true);
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, true); 
+    
+    XMLStreamReader reader = factory.createXMLStreamReader(input);
+    
+    while(reader.hasNext())
+    {
+        if(reader.hasText()
+        {
+            content.append(reader.getText());
+        }
+        reader.next();
+    }
+    
+    return content.toString();
+}
+
+有益的 － 禁用带XMLStreamReader的DTD实体
+String parseXML(InputStream input) {
+    StringBuilder content = new StringBuilder();
+    
+    XMLInputFactory factory = XMLInputFactory.newFactory(); 
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, false); 
+    
+    XMLStreamReader reader = factory.createXMLStreamReader(input);
+    
+    while(reader.hasNext())
+    {
+        if(reader.hasText()
+        {
+            content.append(reader.getText());
+        }
+        reader.next();
+    }
+    
+    return content.toString();
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/611.html
