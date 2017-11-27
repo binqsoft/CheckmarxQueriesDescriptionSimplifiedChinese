@@ -1,0 +1,44 @@
+Header_Injection(HTTP头注入) 
+
+风险
+可能发生的情况
+    攻击者能够：
+    * 劫持session，执行session固定，在session固定里的cookie或者其它未授权的header被注入进请求里。
+    * 引发网页缓存投毒，通过响应分隔攻击或者诱发缓存服务器无意间将一个URL与另外一个URL页面（内容）相关联，并对那个URL缓存内容。
+    * 绕过依靠referrer header的CSRF保护机制。
+    * 通过Request smuggling攻击，依靠发送第二个、不被注意的请求，绕过防火墙/IPS/IDS保护机制。
+    * 通过跨站脚本攻击(XSS)，依靠修改像Content-Type这样的headers或者覆盖像x-xss-protection的headers, 执行任意JavaScript代码。
+
+起因
+这样的情况是如何发生的
+   当一个HTTP请求头被从客户端接收到的输入影响而没有被校验时，HTTP头注入漏洞就会发生。这种攻击经常通过注入CRLF（换行）字符 （例如，\r, \n, %0a, %0b）进入HTTP请求头发生，将HTTP请求头拆分写入信息体并编写第二个任意请求。或者，通过影响请求认证头、安全头，执行其它类型的攻击也是可能的。这种攻击使利用其它攻击成为可能，例如缓存投毒、session劫持、跨站脚本攻击和绕过网站应用程序防火墙的能力。
+
+常规建议
+如何避免这样的情况
+    在将所有输入加入请求之前，对它们执行URL编码，例如CRLF字符，以避免处理恶意数据。
+    校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定结构的数据，而不是拒绝不合格的模式。参数应该被限制到一个被允许的字符集里，并且没有被校验的输入应该被丢弃。除了字符之外，检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+
+
+源代码示例
+JavaScript
+有害的 - 用户输入被使用在一个HTTP请求头里，这将使攻击者能够加入一个换行符和多个头。
+var xmlhttp = new XmlHttpRequest();
+xmlhttp.open("GET", url, true);
+var username = location.search.split('user=')[1];
+xmlhttp.setRequestHeader("x-user:", username);
+xmlhttp.send();
+
+有益的 － 用户输入被检验是否包含换行符并将输入进行URL编码
+var xmlhttp = new XmlHttpRequest();
+xmlhttp.open("GET", url, true);
+var username = location.search.split('user=')[1];
+var safeUsername = encodeURIComponent(username).replace(/[\n\r]/g, '');
+xmlhttp.setRequestHeader("x-user:", safeUsername);
+xmlhttp.send();
+
+更多信息：http://cwe.mitre.org/data/definitions/113.html
