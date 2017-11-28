@@ -1,0 +1,53 @@
+Open_Redirect(打开重定向) 
+
+风险
+可能发生的情况
+    攻击者能够使用社会工程以使受害者点击一个到这个应用程序的链接，以致这个用户将立即被跳转到另外一个任意的网站。用户可能想他们仍然在这个原始应用程序网站内。第二个站点可能是具有攻击性的，包含有恶意软件，或者通常情况下，被用作钓鱼。
+
+起因
+这样的情况是如何发生的
+    这个应用程序重定向用户的浏览器到一个用户请求提供的URL，没有警告用户他们正在被重定向至这个网站外。攻击者能够使用社会工程使受害者点击一个到这个应用程序的链接，这个链接带有定义这个应用程序将把用户浏览器重定向到另一个站点的参数，并且这个用户不能意识到重定向。
+
+常规建议
+如何避免这样的情况
+    1. 理想情况下，不允许对任意URL执行重定向。相反，创建一个从用户提供的参数值到合法URL的服务端映射。
+    2. 如果需要允许任意URL：
+        * 对于在这个应用程序网站内部的URL，首先过滤并编码用户提供的参数，然后通过在这个参数前加这个应用程序站点域名为前缀，把它用作一个相对URL。
+        * 对于应用程序外部的URL（如果需要的话），使用中间免责声明以提供给用户一个清楚的警告，告知他们，他们正在离开您的站点。
+
+源代码示例
+CSharp
+有益的 － 避免重定向到任意URL，相反将参数映射到一个静态URL列表。
+Response.Redirect(getUrlById(targetUrlId));
+
+Java
+有益的 － 避免重定向到任意URL，相反将参数映射到一个静态URL列表。
+Response.Redirect(getUrlById(targetUrlId));
+
+Apex
+String redirsite = ApexPages.currentPage().getParameters().get('redirlocation');
+PageReference pageRef;
+if(redirsite != null)
+{
+    pageRef = new PageReference(redirsite);
+    pageRef.setRedirect(true);
+    return pageRef;
+}
+pageRef = ApexPages.currentPage();
+return pageRef;
+
+
+
+String redirsite = ApexPages.currentPage().getParameters().get('redirlocation');
+PageReference pageRef;
+if(redirsite != null)
+{
+    pageRef = new PageReference('http://domain.com/page.jsp?' + redirsite);
+    pageRef.setRedirect(true);
+    return pageRef;
+}
+pageRef = ApexPages.currentPage();
+return pageRef;
+
+
+更多信息：http://cwe.mitre.org/data/definitions/601.html
