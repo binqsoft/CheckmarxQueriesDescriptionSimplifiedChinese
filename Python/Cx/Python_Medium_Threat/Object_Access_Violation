@@ -1,0 +1,73 @@
+Object_Access_Violation(对象访问违规) 
+
+风险
+可能发生的情况
+    攻击者能够准备恶意的输入数据，这数据将引发一次访问违规、一次数据泄漏或者一次拒绝服务（DEP违规和应用程序崩溃）。
+
+起因
+这样的情况是如何发生的
+    Python的内置getattr函数被用来获取一个对象的一个命名属性的值。它意味着如果这个命名属性存在，相应对象属性的值将能被返回。例如，getattr(obj, 'property') 与obj.property是等价的。如果这个命名属性不存在，将引起一个AttributeError异常。所有的Python对象最终都呈现一个键值对字典。这个字典的键是字符串并且代表这个对象属性的名称，这些值是命名属性值。最终，这个getattr函数执行属性查找，为这个给定的键返回这个命名属性值。这个getattr函数允许任意对象命名属性访问。万一攻击者能够传递一个特殊策划的属性名称给这个getattr函数，访问违规将可能发生。
+
+常规建议
+如何避免这样的情况
+    信任边界 － 不要对从一个不能信任的或者用户控制的源接收到的命名属性查找使用getattr函数。
+    正常情况下，应用程序能够信任来自它自己服务器的数据（数据库、缓存等）。
+    然而，如果有人有操作数据的权限，他／她也能够利用这个'getattr'漏洞。
+    安全通信 － 如果一个应用程序从一个在可信环境里的一个可信应用程序接收到一个属性名称，确保使用一个加密网络连接。
+
+源代码示例
+Python
+有害的 － 这个应用程序接收配置属性名称并把它倾倒至输出流。
+import sys
+
+class Config(object):
+    def set_field(self, field_name, field_value):
+        setattr(self, field_name, field_value)
+
+    def get_field(self, field_name):
+        return getattr(self, field_name) # bad
+
+    def set_password(self, pwd):
+        self.pwd = pwd
+
+    def get_password(self):
+        return self.pwd
+
+config = Config()
+config.set_field('ip', '8.8.8.8')
+config.set_field('port', '53')
+config.set_field('name', 'server')
+config.set_password('123')
+
+c_key = sys.stdin.readline()[:-1]
+print config.get_field(c_key)
+
+有益的 － 应用程序为配置文件值使用一个单独的字典
+import sys
+
+class Config(object):
+    def __init__(self):
+        self.values = {}
+
+    def set_field(self, field_name, field_value):
+        self.values[field_name] = field_value
+
+    def get_field(self, field_name):
+        return self.values.get(field_name)
+
+    def set_password(self, pwd):
+        self.pwd = pwd
+
+    def get_password(self):
+        return self.pwd
+
+config = Config()
+config.set_field('ip', '8.8.8.8')
+config.set_field('port', '53')
+config.set_field('name', 'server')
+config.set_password('123')
+
+c_key = sys.stdin.readline()[:-1]
+print config.get_field(c_key)
+
+更多信息：http://cwe.mitre.org/data/definitions/610.html
