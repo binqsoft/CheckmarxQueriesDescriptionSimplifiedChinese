@@ -1,0 +1,34 @@
+Use_of_Hard_coded_Cryptographic_Key
+
+风险
+可能发生的情况
+    攻击者可以通过访问源代码或者应用程序中的二进制文件来窃取源代码中的静态的、不可改变的密钥。攻击者一旦拿到了密钥，就可以用来获取任何加密的数据，这违反了数据的机密性。更严重的是，被窃取的密钥有可能被替换。请注意，对于一个可以被多次安装的产品，密钥也将会是一样的，这将允许攻击者花费同样的成本破坏所有的实例。
+
+起因
+这样的情况是如何发生的
+    应用程序的代码使用密钥来加密和解密敏感数据。随机创建这个密钥并将其保密本应该是很重要的，但是应用程序只是将一个单一的、静态的密钥嵌入到源代码中的纯文本里。
+    攻击者可能访问到源代码－不管是在源代码控制系统，开发者环境，或服务器文件系统，亦或产品的二进制文件本身。一旦攻击者访问到源代码，那么检索到纯文本的密钥，再用它来解密应用程序所保护的敏感数据将不费吹灰之力。
+
+常规建议
+如何避免这样的情况
+常规指导：
+    ＊不要在纯文本中存储任何敏感信息，例如加密密钥。
+    ＊永远不要在应用程序的源代码中硬编码密钥。
+    ＊实现适当的密钥管理，包括动态生成随机密钥，密钥保护，以及在有必要的情况下替换密钥。
+特殊建议：
+    ＊从应用程序的源代码中删除所有的硬编码加密密钥，取而代之的是从一个额外的受保护的存储中检索密钥。
+
+源代码实例
+Java
+有害的－硬编码加密密钥的一般示例
+//Generate a key
+string encryptionKey = "EncryptionKey123"
+
+//Encrypt the data
+SecretKeySpec keySpec = new SecretKeySpec(encryptionKey.getBytes(), "AES");
+Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7Padding");
+cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+output = cipher.doFinal(input)
+
+更多信息：http://cwe.mitre.org/data/definitions/321.html
+

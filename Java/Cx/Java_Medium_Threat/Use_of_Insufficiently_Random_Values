@@ -1,0 +1,66 @@
+Use_of_Insufficiently_Random_Values(使用不充分的随机值）
+
+风险
+可能发生的情况
+    随机数经常被用作一种机制以防止恶意用户猜中一个值，例如密码、加密秘钥、或者session标识符。基于这个随机值被用于什么，攻击者将能够预测下一个生成的数值，或者前一个生成的数值。这将使攻击者能够劫持另外一个用户的session，假冒另外一个用户，或者解开加密秘钥（基于这个伪随机数用于什么）。
+
+起因
+这样的情况是如何发生的
+    这个应用程序使用一个弱方法生成伪随机值，到这程度其它数值都可以从一个相对较小的样本里决定。因此使用的伪随机数生成器是设计给统计学意义上的均匀分布值用的，它几乎是可确定的。因此，在收集一些生成的数值之后（例如，通过创建少量个别的session，并收集sessionid），攻击者计算出另外一个sessionid将会是可能的。
+    特别地，如果这个伪随机值被用在任何安全场景，例如密码、秘钥、或者秘密标识符，攻击者将能够预测下一个生成的数值，或之前生成的数值。
+
+常规建议
+如何避免这样的情况
+    常规指导：
+        * 无论何时在一个安全环境里需要生成不可预测的数值，使用加密学意义上的强随机数生成器，而不要使用统计学意义上的伪随机数生成器。
+        * 使用内置在您的语言或平台里的加密随机生成器，并确保它被安全seeded。不要用一个弱的、不随机的seed来seed一个生成器。（在大多数情况下，默认是安全的随机）。
+        * 确保您使用一个足够长的随机值，以使暴力攻击不可行。
+    特殊建议：
+        * 不要使用统计学意义上的随机数生成器，使用加密随机生成器。在Java里，这是SecureRandom类。
+
+源代码示例
+Java
+有害的 － 使用一个弱的伪随机数生成器
+Random random = new Random();
+
+long sessNum = random.nextLong();
+
+String sessionId = sessNum.toString();
+
+有益的 － 加密的安全随机数生成器
+SecureRandom random = new SecureRandom();
+
+byte sessBytes[] = new byte[32];
+
+random.nextBytes(sessBytes);
+
+String sessionId = new String(sessBytes);
+
+Objc
+有害的 － 使用一个弱的伪随机数生成器
+long sessNum = rand();
+NSString* sessionId = [NSString stringWithFormat:@"%ld", sessNum];
+
+有益的 － 加密的安全随机数生成器
+UInt32 sessBytes;
+SecRandomCopyBytes(kSecRandomDefault, sizeof(sessBytes), (uint8_t*)&sessBytes);
+    
+NSString* sessionId = [NSString stringWithFormat:@"%llu", sessBytes];
+
+Swift
+有害的 － 使用一个弱的伪随机数生成器
+let sessNum = rand();
+let sessionId = String(format:"%ld", sessNum)
+
+有益的 － 加密的安全随机数生成器
+var sessBytes: UInt32 = 0
+withUnsafeMutablePointer(&sessBytes, { (sessBytesPointer) -> Void in
+    let castedPointer = unsafeBitCast(sessBytesPointer, UnsafeMutablePointer<UInt8>.self)
+    SecRandomCopyBytes(kSecRandomDefault, sizeof(UInt32), castedPointer)
+})
+    
+let sessionId = String(format:"%llu", sessBytes)
+
+
+
+更多信息：http://cwe.mitre.org/data/definitions/330.html
