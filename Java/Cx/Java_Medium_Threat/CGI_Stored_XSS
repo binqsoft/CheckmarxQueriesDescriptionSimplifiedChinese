@@ -1,0 +1,75 @@
+CGI_Stored_XSS
+风险
+可能发生什么情况
+    
+存储的恶意数据可能会检索系统信息并通过CGI（公共网关接口）利用系统。
+
+起因
+这样的情况是如何发生的？
+    CGI规范提供了读取文件、获取shell访问以及破坏服务器机器及其附属主机上的文件系统的机会。
+
+
+    获取访问权限的方法包括：利用脚本的假设，利用服务器环境中的弱点，以及利用其他程序和系统调用中的弱点。
+
+
+
+    CGI脚本的主要缺点是输入验证不足。
+
+常规建议
+如何避免这样的情况
+常规指导
+    *不要提供不必要的文件权限。
+
+
+    *验证所有DB输出并进行编码。
+
+源代码示例
+perl
+有害的-从BD打印数据而不编码
+#!/usr/bin/perl
+use CGI;
+use DBI;
+
+my $cgi = CGI->new();
+
+$dbh = DBI->connect('dbi:mysql:perltest','root','password')
+  or die "Connection Error: $DBI::errstr\n";
+$sql = "select * from samples";
+$sth = $dbh->prepare($sql);
+$sth->execute
+  or die "SQL Error: $DBI::errstr\n";
+
+my @row = $sth->fetchrow_array;
+
+print $cgi->header();
+	$cgi->start_html(),
+	$cgi->p("The result from DB is: ", @row),
+	$cgi->end_html;
+
+无害的-编码后从数据库打印输出
+
+
+#!/usr/bin/perl
+use CGI;
+use DBI;
+use HTML::Entities;
+
+my $cgi = CGI->new();
+
+$dbh = DBI->connect('dbi:mysql:perltest','root','password')
+  or die "Connection Error: $DBI::errstr\n";
+$sql = "select * from samples";
+$sth = $dbh->prepare($sql);
+$sth->execute
+  or die "SQL Error: $DBI::errstr\n";
+
+my @row = $sth->fetchrow_array;
+
+print $cgi->header();
+	$cgi->start_html(),
+	$cgi->p("The result from DB is: ", HTML::Entities::encode(@row)),
+	$cgi->end_html;
+
+
+更多信息 :http://cwe.mitre.org/data/definitions/79.html
+

@@ -1,0 +1,47 @@
+CGI_Reflected_XSS_All_Clients
+风险
+可能发生什么情况
+    特别制作的HTTP请求可以检索系统信息，并通过CGI（公共网关接口）来利用系统。
+
+
+起因
+这样的情况是如何发生的？
+    CGI规范提供了读取文件、获取shell访问以及破坏服务器机器及其附属主机上的文件系统的机会。
+    获取访问权限的方法包括：利用脚本的假设，利用服务器环境中的弱点，以及利用其他程序和系统调用中的弱点。
+    CGI脚本的主要缺点是输入验证不足。
+
+常规建议
+如何避免这样的情况
+常规指导
+    *如果没有必要，不要将用户输入绑定到系统变量。
+    *验证并编码所有用户输入。
+
+源代码示例
+perl
+无益的-脚本盲目地打印出已提交的注释
+
+#!/usr/bin/perl
+use CGI;
+
+my $cgi = CGI->new();
+my $text = $cgi->param('comment');
+
+print $cgi->header();
+print "You entered $text";
+
+无害的-注释在打印出来之前被编码
+
+
+#!/usr/bin/perl
+use CGI;
+use HTML::Entities;
+
+my $cgi = CGI->new();
+my $text = $cgi->param('comment');
+
+print $cgi->header();
+print "You entered ", HTML::Entities::encode($text);
+
+
+详见http://cwe.mitre.org/data/definitions/79.html
+

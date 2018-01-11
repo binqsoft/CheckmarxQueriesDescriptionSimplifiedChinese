@@ -1,0 +1,45 @@
+External_Control_of_System_or_Config_Setting
+
+风险
+可能发生什么情况
+    如果外部用户可以控制应用程序配置或环境设置，她可以中断应用程序服务，或导致应用程序异常行为，可能在应用程序中产生额外的漏洞，甚至导致应用程序执行恶意操作。 
+      
+起因
+这样的情况是如何发生的
+    应用程序接收来自用户的未经验证的输入，并直接将该值设置为应用程序配置或者是环境设置，而没有正确消毒或限制输入。 
+      
+常规建议
+如何避免这样的情况
+常规指导
+    *不要允许用户输入或不可信的数据来控制敏感值，特别是配置或环境设置.
+    *始终验证从用户接收的数据，然后再将其用于任何内部使用。
+
+
+      
+源代码示例
+Java的
+用户输入控制系统属性
+
+    public  void  init （）  {
+    字符串dbUrl = request.getParameter（“dbUrl”）;
+    string remoteWsUrl = request.getParameter（“wsUrl”）;
+    
+    属性props = System.getProperties（）;
+    props.setProperty（“dbUrl”，dbUrl）;
+    props.setProperty（“wsUrl”，remoteWsUrl）;
+    
+}
+
+
+从配置文件读取属性
+
+
+    public  void  init （）  {
+    属性props = new Properties（System.getProperties（））;
+    props.loadFromXml（new FileInputStream（CONFIG_FILE_PATH））;
+
+}
+
+
+了解更多信息：http ：//cwe.mitre.org/data/definitions/15.html
+

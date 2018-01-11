@@ -1,0 +1,91 @@
+Cleartext_Submission_of_Sensitive_Information
+
+风险
+
+可能发生的情况
+    
+在通过网络传输时，必须始终保护敏感信息和个人信息，如密码、社保号码、信用卡数据和其他形式的PII（个人可识别信息）。不使用SSL/TLS或其他形式的加密，通过未加密的网络发送该私有数据，可以暴露用户的秘密信息，并使他们暴露于冒名顶替、身份盗窃和财务欺诈的风险之中。
+    
+
+如果SSL/TLS信道在前端Web服务器、反向代理或类似的服务器上终止，则可以忽略这个问题。
+
+起因
+
+它是如何发生的
+
+    该应用程序以多种方式处理敏感和私有信息。在某一点上，此秘密数据通过网络发送，但是应用程序不使用SSL/TLS或任何其他安全协议，并且不确保在通过未受保护的通道发送数据之前对其进行加密。
+
+常规建议
+如何避免这样的情况
+常规指导
+    *始终保护所有PII和其他敏感数据，特别是在通过网络发送时。
+
+    *在传输敏感数据时使用SSL/TLS。或者，也可以使用其他加密协议，如IPsec或SSH。
+    *
+重新考虑申请是否绝对需要这些个人资料。无法公开未接收的数据。
+
+
+具体建议：
+    *
+
+
+
+
+在web应用程序中，如果没有通过SSL验证通道的安全性，就不要将个人信息直接输出到响应。
+
+    *也不要将个人信息直接写入标准套接字。相反，始终使用SSLSocket来确保您的通道使用SSL/TLS。
+
+源代码示例
+
+Java
+
+使用标准套接字（无加密）
+public void runServer() {
+    ServerSocket server = new ServerSocket(PORT);
+    Socket client;
+    
+    while (true) {
+        client = server.accept(); 
+        MyUser user = handleRequest(client.getInputStream());
+        
+        PrintWriter output = new PrintWriter(server.getOutputStream());
+        output.println(user.AccountId);
+        output.flush();
+    }
+}
+
+
+使用加密SSLSocket
+
+
+public void runServer() {
+    try { 
+        SSLServerSocketFactory factory = 
+            (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+        
+        ServerSocket server = factory.createServerSocket(PORT);
+        Socket client;
+        
+        while (true) {
+            client = server.accept(); 
+            MyUser user = handleRequest(client.getInputStream());
+            
+            PrintWriter output = new PrintWriter(server.getOutputStream());
+            output.println(user.AccountId);
+            output.flush();
+        }
+    }
+    catch (IOException ex) {
+        handleException(ex);
+    }
+    finally {
+        if (output != null) output.close(); 
+        if (client != null) 
+            if (!client.isClosed()) client.close(); 
+        if (server != null) 
+            if (!server.isClosed()) server.close();
+    }
+}
+
+更多信息 :http://cwe.mitre.org/data/definitions/319.html
+
