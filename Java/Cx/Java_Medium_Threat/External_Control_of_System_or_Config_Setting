@@ -20,7 +20,7 @@ External_Control_of_System_or_Config_Setting
 Java的
 用户输入控制系统属性
 
-    public  void  init （）  {
+public  void  init （）  {
     字符串dbUrl = request.getParameter（“dbUrl”）;
     string remoteWsUrl = request.getParameter（“wsUrl”）;
     
@@ -34,12 +34,12 @@ Java的
 从配置文件读取属性
 
 
-    public  void  init （）  {
+public  void  init （）  {
     属性props = new Properties（System.getProperties（））;
     props.loadFromXml（new FileInputStream（CONFIG_FILE_PATH））;
 
 }
 
 
-了解更多信息：http ：//cwe.mitre.org/data/definitions/15.html
+了解更多信息：http://cwe.mitre.org/data/definitions/15.html
 
