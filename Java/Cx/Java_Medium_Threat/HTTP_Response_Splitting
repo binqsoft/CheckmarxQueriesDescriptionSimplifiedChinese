@@ -1,0 +1,51 @@
+HTTP_Response_Splitting（HTTP响应分割）
+
+风险
+可能发生的情况
+攻击者可以：
+    ＊通过操作headers任意地将应用程序服务器的响应header改为受害者的HTTP请求。
+    ＊通过注入2个联系的换行符更改应用程序服务器的响应body，这可能导致跨站脚本（XSS）攻击。
+    ＊造成缓存污染，可能通过此与应用程序同样的代理控制任何站点的HTTP响应。
+
+起因
+这样的情况是如何发生的
+    由于用户的输入会在HTTP响应的header中被使用，攻击者可以通过增加换行符来使header看起来像是具有工程化内容的多个headers，可能使响应看起来像是多个响应（例如，通过工程化的复制content-length headers)。这可能导致受害者的后续请求由一个有组织的代理服务器提供工程化的二次响应。如果代理服务器也执行响应缓存，攻击者可以立即向另一个站点发送后续的请求，导致代理服务器把改造过的响应作为这第二个站点的响应，并在之后将这响应发送给其他用户。
+
+常规建议
+如何避免这样的情况
+    1、验证并清洗所有不管任何来源的输入。验证必须基于一个白名单：只接受符合指定结构的数据，不接受其他的结构。检查：
+        ＊数据类型
+        ＊大小
+        ＊范围
+        ＊格式
+        ＊期望的值 
+    2、此外，在添加到响应的header里之前用URL-编码方法处理所有的用户输入。
+
+源代码示例
+C#
+有害的 － 用户输入被用于HTTP响应的header中，这使攻击者可以添加换行符分割成多个headers。
+public class HTTPResponseSplitting
+{
+    public void foo(HttpResponse Response)
+    {
+        String author3 = Console.ReadLine();
+        Response.AppendHeader("Author: " + author3);
+    }
+}
+
+有益的 － 用户输入被检查是否含有换行符，并且会被URL编码
+public class HTTPResponseSplittingFixed
+{
+    public void foo(HttpResponse Response)
+    {
+        String author3 = Console.ReadLine();
+        if (author3.Contains('\n') == false)
+        {
+            author3 = HttpUtility.UrlEncode(author3);
+            Response.AppendHeader("Author: " + author3);
+        }
+    }
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/113.html
+
