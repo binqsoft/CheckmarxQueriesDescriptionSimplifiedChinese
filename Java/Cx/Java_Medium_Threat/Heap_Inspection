@@ -1,0 +1,138 @@
+Heap_Inspection（堆检查）
+
+风险
+可能发生的情况
+    应用程序存储在未加密内存中的所有变量都有可能被未经授权的用户通过访问机器的权限检索到。例如，一个有权限的攻击可以将一个调试器附加到运行的进程中，或者从swapfile或者crash dump文件中检索到进程的内存。
+
+起因
+这样的情况是如何发生的
+    字符串变量是不可变的——换句话说，一旦指定了一个字符串变量，它的值就不会被更改或删除。因此，这些值会在不确定的时间内一直存在于内存中（可能存在多处），一直到垃圾收集器将其删除。类似密码这样的敏感数据在其生命周期中将不受控制地以明文形式暴露在内存中。
+
+常规建议
+如何避免这样地情况
+常规指导：
+    ＊即使只是很短的一段时间，也不要把密码或加密密钥这样地敏感数据以明文形式存储在内存中。
+    ＊更倾向于使用专门针对存储加密内存的特殊类。
+    ＊或者，使用可变的数据类型（例如字节数组）临时性地存储隐私，并及时将内存地址清零。
+
+特殊建议－Java：
+    ＊使用例如SealedObject这样的加密内存对象，取代把密码存储在不可变的字符串中。
+
+特殊建议－.NET：
+    ＊使用例如SecureString或ProtectedData这样的加密内存对象，取代把密码存储在不可变的字符串中。
+
+源代码示例
+Java
+有害的 － 在不可变字符串中明文存储密码
+class Heap_Inspection 
+{
+    private string password;
+	
+    void setPassword()
+    {	
+        password = System.console().readLine("Enter your password: ");
+    }
+}
+
+有益的 － 在内存中受保护的密码
+class Heap_Inspection_Fixed 
+{ 
+    private SealedObject password;
+	
+    void setPassword()
+    {	
+        byte[] sKey = getKeyFromConfig();
+	Cipher c = Cipher.getInstance("AES");
+	c.init(Cipher.ENCRYPT_MODE, sKey);
+
+	char[] input = System.console().readPassword("Enter your password: ");
+	password = new SealedObject(Arrays.asList(input), c);
+    }
+}
+
+C++
+有漏洞的C++代码
+/* Vulnerable to heap inspection */
+
+#include <stdio.h>
+
+
+void somefunc(){
+    printf("Yea, I'm just being called for the heap of it..\n");
+}
+
+void authfunc(){
+    char* password = (char *) malloc(256);
+    char ch;
+    ssize_t k;
+    int i=0;
+    while(k = read(0, &ch, 1) > 0)
+    {
+        if (ch == '\n'){
+            password[i]='\0';
+            break;
+        } else{
+            password[i++]=ch;
+            fflush(0);
+        }
+    }
+    printf("Password: %s\n",&password[0]);
+}
+
+int main()
+{
+    printf("Please enter a password:\n");
+
+    authfunc();
+    printf("You can now dump memory to find this password!");
+    somefunc();
+    gets();
+
+}
+
+安全的C++代码
+/* Pesumably safe heap */
+
+#include <stdio.h>
+#include <string.h>
+
+#define STDIN_FILENO 0
+
+void somefunc(){
+    printf("Yea, I'm just being called for the heap of it..\n");
+}
+
+void authfunc(){
+    char* password = (char*) malloc(256);
+    int i=0;
+    char ch;
+    ssize_t k;
+    while(k = read(STDIN_FILENO, &ch, 1) > 0)
+    {
+        if (ch == '\n'){
+            password[i]='\0';
+	    break;
+        } else{
+	    password[i++]=ch;
+	    fflush(0);
+        }
+    }
+    i=0;
+    memset(password,'\0',256);
+}
+
+int main()
+{
+    printf("Please enter a password:\n");
+    authfunc();
+    somefunc();
+    char ch;
+    while(read(STDIN_FILENO, &ch, 1) > 0)
+    {
+        if (ch == '\n')
+            break;
+    }
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/244.html
+
