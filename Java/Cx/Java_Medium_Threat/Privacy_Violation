@@ -1,0 +1,49 @@
+Privacy_Violation（隐私侵犯）
+
+风险
+可能发生的情况
+    用户的个人信息可能会被恶意的程序员或攻击者窃取以截获数据。
+
+起因
+这样的情况是如何发生的
+    应用程序将用户的信息（例如密码，账号信息，或信用卡号）发送到应用程序外（例如写到本地文本，日志文件，或发送到其他的网络服务中）。
+
+常规建议
+如何避免这样的情况
+    1、在写日志或其他文件之前应当移除个人信息。
+    2、检查向远程网络服务发送个人数据的必要性和合理性。
+
+源代码示例
+C#
+有害的 － 用户密码被写在屏幕上
+class PrivacyViolation
+{
+    static void foo(string insert_sql)
+    {
+        string password = "unsafe_password";
+        insert_sql = insert_sql.Replace("$password", password);
+        System.Console.WriteLine(insert_sql);
+    } 
+}
+
+有益的 － 用户密码在被写到屏幕上之前进行MD5加密
+class PrivacyViolationFixed
+{
+    static void foo(string insert_sql)
+    {
+        string password = "unsafe_password";
+        MD5 md5Hash = System.Security.Cryptography.MD5.Create();
+        byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+        StringBuilder md5Password = new StringBuilder();
+
+        for (int i = 0; i < data.Length; i++)
+	{
+            md5Password.Append(data[i].ToString("x2"));
+	}
+        insert_sql = insert_sql.Replace("$password", md5Password.ToString());
+        System.Console.WriteLine(insert_sql);
+    } 
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/359.html
+

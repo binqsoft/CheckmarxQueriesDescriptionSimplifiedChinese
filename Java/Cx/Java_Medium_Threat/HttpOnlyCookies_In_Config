@@ -1,0 +1,54 @@
+HttpOnlyCookies_In_Config（配置中的HttpOnlyCookies）
+
+风险
+可能发生的情况
+    包含用户会话标记和其他敏感应用程序cookies的cookies，通常可以通过客户端脚本语言（例如JavaScript）来访问。这些cookies将会被恶意的客户端脚本读取和访问，例如跨站脚本（XSS），除非网络应用程序通过设置“httpOnly”cookie标记来阻止这些行为。根据纵深防御理念，这种标记将会减少当XSS漏洞被发现时造成的损害。
+
+起因
+这样的情况是如何发生的
+    网络应用程序框架默认没有给应用程序的会话id的cookies和其他敏感应用程序的cookies设置“httpOnly”的标记。应用程序同样也不会使用“httpOnly”cookie标记，这就默认允许客户端的脚本访问到cookies。
+
+常规建议
+如何避免这样的情况
+    ＊对任何服务器端的敏感cookie一直设置“httpOnly”标记
+    ＊在网络站点的配置文件中，给所有的应用程序设置“httpOnly”cookies。
+    ＊在你应用程序的web.xml配置文件中，在<session-config>元素中<cookie-config>元素的下方添加<http-only>true</http-only>
+
+源代码示例
+Java
+有害的 － 不安全的Cookie配置
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+	      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+	      http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	      version="3.0">
+
+    <session-config>
+        <cookie-config>
+            <http-only>false</http-only>
+        </cookie-config>
+    </session-config>
+    
+</web-app>
+
+有益的 － 使用安全Cookies的web.xml配置文件
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+	      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+	      http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	      version="3.0">
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <secure>true</secure>
+        </cookie-config>
+    </session-config>
+    
+</web-app>
+
+更多信息:http://cwe.mitre.org/data/definitions/10706.html
+

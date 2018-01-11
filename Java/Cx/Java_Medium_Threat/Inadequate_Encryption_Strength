@@ -1,0 +1,42 @@
+Inadequate_Encryption_Strength（不足的加密强度）
+
+风险
+可能发生的情况
+    使用弱的或过期的加密方法不能给敏感数据提供充分的保护。可以访问到加密数据的攻击者，将可能使用密码学或暴力破解法来解密。借此攻击者可以窃取用户的密码和其他个人数据。这将导致用户模拟或身份盗用。
+
+起因
+这样的情况是如何发生的
+    应用程序使用了相对容易破解的被认为应该淘汰的弱算法。这些淘汰的算法会被各种不同种类的攻击，包括暴力破解法，作为漏洞利用。
+
+常规建议
+如何避免这样的情况
+常规指导：
+    ＊一直使用强的、流行的算法来进行加密、哈希或其他行为。
+    ＊不要使用弱的、过期的或淘汰的算法。
+    ＊根据具体的需求，确保你选择了正确的算法机制。
+    ＊密码应当使用专用的密码保护计划来保护，例如bcrypt，scrypt，PBKDF2，或Argon2。
+
+特殊建议：
+    ＊不要使用SHA-1，MD5，或其他弱的哈希算法来保护密码或个人数据。当需要使用安全哈希方法时，用更强的哈希算法替代，例如SHA-256。
+    ＊不要使用DES，Triple-DES，RC2，或任何其他弱加密算法来保护密码或个人数据，使用更强的加密算法例如AES来保护个人数据。
+    ＊不要使用弱的加密模型，例如ECB，或依赖不安全的默认模型。显示地指定更强的加密模型，例如GCM。
+    ＊对于对称加密，使用长度至少为256位的密钥。
+
+源代码示例
+Java
+有害的 － PII的弱哈希方法
+string protectSSN(HttpServletRequest req) {
+    string socialSecurityNum = req.getParameter("SocialSecurityNo");
+    
+    return DigestUtils.md5Hex(socialSecurityNum);
+}
+
+有益的 － PII的强哈希方法
+string protectSSN(HttpServletRequest req) {
+    string socialSecurityNum = req.getParameter("SocialSecurityNo");
+    
+    return DigestUtils.sha256Hex(socialSecurityNum);
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/326.html
+

@@ -1,0 +1,50 @@
+SSRF（Server-Side Request Forgery，服务端请求伪造）
+
+风险
+可能发生的情况
+    攻击者可以滥用这个缺陷来执行来自应用程序服务器的任意请求。这可以被用来扫描内部服务；代理攻击进入受保护的网络；绕过网络控制；下载未授权的文件；访问内部服务和管理接口；可能控制请求的内容甚至偷窃服务器的凭证。
+
+起因
+这样的情况是如何发生的
+    应用程序从用户接收到URL（或其他数据），并用其来向另一个远程服务器发送请求。
+    攻击者可以在请求中注入任意URL，使应用程序连接到攻击者想要的任意服务器。据此攻击者可以滥用应用程序来访问她原本无法访问到的服务，并使请求表面上看起来来自于应用程序的服务器。
+
+常规建议
+如何避免这样的情况
+    ＊不要基于用户输入的内容连接任意服务器。
+    ＊如果可能，应用程序应该让用户的浏览器直接检索所需的信息。
+    ＊如果由应用程序代理发起到服务器的请求是必须的，把允许的URL加入白名单，并且不要包括任何敏感的服务器信息。
+
+源代码示例
+Python
+有害的 － 检索和显示URL的内容
+def do_GET(self):
+    location = urllib.parse.urlparse(self.path)
+    query = location.query
+    
+    url = urllib.parse.parse_qs(query)['url']
+    
+    response = urllib.request.urlopen(url)
+    if response.status == 200:
+        data = response.read()
+        
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html')
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+有益的 － 验证并使用用户的浏览器重定向取代之
+def do_GET(self):
+    location = urllib.parse.urlparse(self.path)
+    query = location.query
+    
+    url = urllib.parse.parse_qs(query)['url']
+    
+    if url.startswith('/') or url.startswith("https://" + location.netloc + "/"):
+        self.send_response(302)
+        self.send_header('Location', url)
+        self.end_headers()
+
+更多信息：http://cwe.mitre.org/data/definitions/918.html
+

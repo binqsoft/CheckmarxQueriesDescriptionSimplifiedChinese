@@ -1,0 +1,76 @@
+ReDoS_From_Regex_Injection（正则注入导致的正则拒绝服务攻击）
+
+风险
+可能发生的情况
+    ReDoS（正则表达式拒绝服务攻击）可以使用复杂的模式来引起拒绝服务攻击（DoS）。对某些模式，运行的时间会根据输入的大小成倍增长。攻击者可以利用这些正则表达式来使应用程序花费大量的时间处理，从而阻止合法的用户访问应用程序。
+
+起因
+这样的情况是如何发生的
+    ReDos（正则表达式拒绝服务攻击）是一种算法复杂度攻击，它利用了指数时间复杂度的最坏情况。特别的，一些正则模式——不管是在应用程序里显式编码的，还是由用户输入用来搜索文本的——对于一些输入的文本会造成极端层级的处理。例如，｀(a+)+`将会因为像"aaaaaaaaaaaaaaaaaaa!"这样的长字符串的输入而导致服务挂起。
+
+常规建议
+如何避免这样的情况
+    ＊不要使用输入的内容来构建正则表达式
+    ＊确保所有的正则表达不是ReDoS的漏洞，特别是最坏情况的复杂度不要导致应用程序挂起。
+    ＊尽量避免使用复杂的表达式，尽可能简化它们。
+
+源代码示例
+Java
+有害的 － 基于用户提供的格式验证日期
+bool validateInput(HttpServletRequest req) {
+    string startDate = req.getParameter("startDate");
+    string endDate = req.getParameter("endDate");
+
+    string format = readCookieByName(req, "dateFormat");
+    
+    if (startDate.matches(format) && endDate.matches(format))
+        return true;
+    else 
+        return false;
+}
+
+有益的 － 基于服务器端的格式验证日期
+bool validateInput(HttpServletRequest req) {
+    string startDate = req.getParameter("startDate");
+    string endDate = req.getParameter("endDate");
+
+    // Constrain available formats to hardcoded list
+    string style = readCookieByName(req, "dateStyle");
+    string format;
+    if (style == "YMD") 
+        format = "^\d{4}-\d{2}-\d{2}";
+    else 
+        format = "^\d{2}-\d{2}-\d{4}";
+
+    if (startDate.matches(format) && endDate.matches(format))
+        return true;
+    else 
+        return false;
+}
+
+有害的 － 使用正则表达式来检查密码中是否含有用户名
+bool validatePassword(HttpServletRequest req) {
+    string username = req.getParameter("username");
+    string password = req.getParameter("password");
+
+    // Verifies password does not contain username
+    if (password.matches(username))
+        return false;
+    else 
+        return true;
+}
+
+有益的 － 不使用正则表达式来检查密码中是否含有用户名
+bool validatePassword(HttpServletRequest req) {
+    string username = req.getParameter("username");
+    string password = req.getParameter("password");
+
+    // Verifies password does not contain username
+    if (password.contains(username))
+        return false;
+    else 
+        return true;
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/400.html
+
