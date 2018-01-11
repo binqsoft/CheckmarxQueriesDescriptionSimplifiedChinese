@@ -1,0 +1,45 @@
+Trust_Boundary_Violation（违反信任边界规则）
+
+风险
+可能发生的情况
+    应用程序的开发者可能认为用户的输入是可信任的数据，这可能制造一个基于用户输入的漏洞，例如SQL注入或跨站脚本攻击。
+
+起因
+这样的情况是如何发生的
+    应用程序把用户输入的不可信任的数据存放到被认为是可信任的服务器端会话文件夹中。这将使开发者把不可信任的数据当成可信任的。
+
+常规建议
+如何避免这样的情况
+    1、验证并清洗所有不管任何来源的输入。验证必须基于一个白名单：只接受符合指定结构的数据，不接受其他的结构。检查：
+        ＊数据类型
+        ＊大小
+        ＊范围
+        ＊格式
+        ＊期望的值
+    2、不要将不信任的用户输入和信任的数据混合在一起。
+
+源代码示例
+C#
+有害的 － 未经清洗就将用户的输入添加到当前会话中
+public class TrustBoundaryViolation
+{
+    public void foo()
+    {
+        string input = Console.ReadLine();
+        HttpContext.Current.Session[�val�] = input;
+    }
+}
+
+有益的 － 在使用之前从用户输入的数据中提取数值
+public class TrustBoundaryViolationFixed
+{
+    public void foo()
+    {
+        string input = Console.ReadLine();
+        string inputValue = int.Parse(input).ToString();
+        HttpContext.Current.Session[�val�] = inputValue;
+    }
+}
+
+更多信息：http://cwe.mitre.org/data/definitions/501.html
+

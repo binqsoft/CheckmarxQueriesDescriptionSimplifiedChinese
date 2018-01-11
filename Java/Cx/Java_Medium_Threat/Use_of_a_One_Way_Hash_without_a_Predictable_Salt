@@ -1,4 +1,4 @@
-Use_of_a_One_Way_Hash_without_a_Salt(使用不加盐的哈希方法）
+Use_of_a_One_Way_Hash_with_a_Predictable_Salt（使用含有可预测的盐的哈希方法）
 
 风险
 可能发生的情况
@@ -86,4 +86,5 @@ private String protectPassword(String password) {
     return Base64.getEncoder().encodeToString(hash); 
 }
 
-更多信息：http://cwe.mitre.org/data/definitions/760.html
+更多信息：http://cwe.mitre.org/data/definitions/759.html
+
