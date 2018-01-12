@@ -1,0 +1,147 @@
+Client_Potential_XSS（客户端潜在跨站脚本攻击）
+
+风险
+可能发生的情况
+    攻击者能够使用社会工程造成一个用户发送经过策划的输入给这个网站，重写网页页面并插入恶意脚本。攻击者然后能够假装成这个原始网站，这将使攻击者能够窃取用户的密码、请求用户的信用卡信息、提供假信息、或运行恶意软件。从受害者的角度看，这就是原始的网站，受害者将会把遭受的损失归咎于这个网站。
+
+起因
+这样的情况是如何发生的
+    这个应用程序创建了一些包含有来自之前用户输入的数据的网页。用户输入是直接嵌入进这个页面的HTML，造成浏览器把它作为这个页面的一部分展示出来。如果输入包含HTML片段或者JavaScript，这些也被展示，并且用户不能辨别出这不是其所预期的网页。这个漏洞是嵌入任意用户输入而没有首先对它以一种格式进行编码的结果。这种编码行为将阻止浏览器把用户输入视为HTML而不是纯文本这种情况发生。
+
+常规建议
+如何避免这样的情况
+
+    1. 校验所有输入，无论来源。校验应该基于一个白名单：仅接受符合特定结构的数据，而不是拒绝不合格的模式。检查如下内容：
+        * 数据类型
+        * 数据大小
+        * 数据范围
+        * 数据格式
+        * 期待的一些值
+    2. 在将动态数据嵌入到输出之前，对这些动态数据全部进行编码。
+    3. 编码应该是上下文相关的。例如：
+        * 对HTML内容进行HTML编码
+        * 对输出到属性值的数据进行HTML属性编码
+        * 对服务器生成的JavaScript进行JavaScript编码
+    4. 考虑使用ESAPI编码库，或者平台内置的函数。对早期版本的ASP.NET，考虑使用AntiXSS库。
+    5. 在Content-Type的HTTP响应头，明确地对整个页面定义字符编码（charset）。
+    6. 为session cookie设置httpOnly标志，以防止利用XSS窃取cookie。
+
+源代码示例
+
+CSharp
+有害的 － 应用程序使用"Referer"字段字符串来构建HttpResponse
+
+public class ReflectedXssAllClients
+{
+        public static void foo(HttpRequest Request, HttpResponse Response)
+        {
+                string Referer = Request.QueryString["Referer"];
+                Response.BinaryWrite(Referer);
+        }
+}
+
+有益的 － "Referer"字段字符串在使用前被执行HTML编码
+
+public class ReflectedXssAllClientsFixed
+{
+        public static void foo(HttpRequest Request, HttpResponse Response, AntiXss.AntiXssEncoder encoder)
+        {
+                string Referer = Request.QueryString["Referer"];
+                Response.BinaryWrite(encoder.HtmlEncode(Referer, true));
+        }
+}
+
+有害的 － 用户输入被写入一个展示到界面上的TextBox，这将是用户能够注入一个脚本
+
+public class ReflectedXSSSpecificClients
+{
+        public void foo(TextBox tb)
+        {
+                string input = Console.ReadLine();
+                tb.Text = input;
+        }
+}
+
+有益的 － 用户输入在被展示的界面上前被执行HTML编码
+
+public class ReflectedXSSSpecificClientsFixed
+{
+        public void foo(TextBox tb, AntiXssEncoder encode)
+        {
+                string input = Console.ReadLine();
+                tb.Text = encode.HtmlEncode(input);
+        }
+}
+
+有害的 － 这个应用程序使用来自HttpRequest的"filename"字段字符串构建HttpResponse
+
+public class UTF7XSS
+{
+        public void foo(HttpRequest Request, HttpResponse Response
+        {
+                Response.Charset("UTF-7");
+                string filename = Request.QueryString["filename"];
+                Response.BinaryWrite(AntiXss.HtmlEncode(filename));
+        }
+}
+
+有益的 － "filename"字符串被转换为一个整数，并使用一个switch语句构建新的"filename"字符串
+
+public class UTF7XSSFixed
+{
+        public static void foo(HttpRequest Request, HttpResponse Response)
+        {
+                Response.Charset("UTF-7");
+                string filename = Request.QueryString["fileNum"];
+                int fileNum = Convert.ToInt32(filename);
+                
+                switch(fileNum)
+                {
+                        case 1:
+                                filename = "File1.txt";
+                                break;
+                        default:
+                                filename = "File2.txt";
+                                break;
+                }
+                
+                Response.BinaryWrite(AntiXss.HtmlEncode(filename));
+        }
+}
+
+
+Java
+
+有害的 － 用户输入被写入展示到屏幕上的一个label，这将使用户能够注入一个脚本
+
+public class ReflectedXSSAllClients {
+	public static void XSSExample(TextArea name) {	
+		Label label = new Label();		
+		label.setText("Hello " + name.getText());	
+	}
+}
+
+有益的 － 使用switch语句来组装label的文本值并且管理错误的用户输入
+
+public class ReflectedXSSAllClientsFixed {
+	public static void XSSExample(TextArea name) {
+		Label label = new Label();		
+		switch (name) {
+		case "Joan":
+			label.setText("Hello Joan");	
+			break;
+		case "Jim":
+			label.setText("Hello Jim");	
+			break;
+		case "James":
+			label.setText("Hello James");	
+			break;
+		default:
+			System.out.println("Wrong Input");
+		}
+	}
+}
+
+
+更多信息：http://cwe.mitre.org/data/definitions/79.html
+
